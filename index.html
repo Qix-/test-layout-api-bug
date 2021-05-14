@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<style>
+	main {
+		display: layout(webasm);
+	}
+</style>
+
+<main></main>
+
+<script language="javascript+layout">
+	const asm64 = '{{ASM64}}';
+
+	const keyStr =
+		'ABCDEFGHIJKLMNOP' +
+		'QRSTUVWXYZabcdef' +
+		'ghijklmnopqrstuv' +
+		'wxyz0123456789+/' +
+		'=';
+
+	function atob(input) {
+		let output = '';
+		let chr1,
+			chr2,
+			chr3 = '';
+		let enc1,
+			enc2,
+			enc3,
+			enc4 = '';
+		let i = 0;
+
+		// remove all characters that are not A-Z, a-z, 0-9, +, /, or =
+		const base64test = /[^A-Za-z0-9\+\/\=]/g;
+		if (base64test.exec(input)) {
+			console.error(
+				'atob(): There are invalid base64 characters in the input text. Expect errors.'
+			);
+		}
+
+		input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+
+		do {
+			enc1 = keyStr.indexOf(input.charAt(i++));
+			enc2 = keyStr.indexOf(input.charAt(i++));
+			enc3 = keyStr.indexOf(input.charAt(i++));
+			enc4 = keyStr.indexOf(input.charAt(i++));
+
+			chr1 = (enc1 << 2) | (enc2 >> 4);
+			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+			chr3 = ((enc3 & 3) << 6) | enc4;
+
+			output = output + String.fromCharCode(chr1);
+
+			if (enc3 != 64) {
+				output = output + String.fromCharCode(chr2);
+			}
+			if (enc4 != 64) {
+				output = output + String.fromCharCode(chr3);
+			}
+
+			chr1 = chr2 = chr3 = '';
+			enc1 = enc2 = enc3 = enc4 = '';
+		} while (i < input.length);
+
+		return unescape(output);
+	}
+
+	function base64ToArrayBuffer(base64) {
+		const binary_string = atob(base64);
+		const len = binary_string.length;
+		const bytes = new Uint8Array(len);
+		for (let i = 0; i < len; i++) {
+			bytes[i] = binary_string.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+
+	registerLayout(
+		'webasm',
+		class {
+			constructor() {
+				console.log(
+					'webassembly?',
+					typeof WebAssembly,
+					typeof WebAssembly?.instantiateStreaming
+				);
+				const asm = base64ToArrayBuffer(asm64);
+				console.log('decoded webasm binary with size:', asm.byteLength);
+				WebAssembly.instantiate(asm)
+					.then(() => console.log('loaded webasm successfully'))
+					.catch(err => console.error('failed to load webasm', err));
+			}
+
+			async intrinsicSizes() {}
+			async layout(children, edges, constraintSpace, styles) {
+				const childFragments = [];
+
+				for (const child of children) {
+					const childFragment = await child.layoutNextFragment();
+					childFragments.push(childFragment);
+				}
+
+				return {
+					childFragments
+				};
+			}
+		}
+	);
+</script>
+<script>
+	if (!('layoutWorklet' in CSS)) {
+		document.write('Houdini layout API not available.');
+	}
+
+	const elem = document.querySelector("script[language='javascript+layout']");
+	const blob = new Blob([elem.textContent], { type: 'text/javascript' });
+	const url = URL.createObjectURL(blob);
+
+	CSS.layoutWorklet
+		.addModule(url)
+		.then(() => console.log('loaded worklet'))
+		.catch(err => console.error('failed to load worklet:', err));
+</script>
