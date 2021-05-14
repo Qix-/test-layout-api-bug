@@ -1,23 +1,7 @@
 {
 	"private": true,
 	"scripts": {
-		"format": "prettier --write .",
 		"start": "node ./cli.mjs",
 		"compile": "${CXX-clang++} -o payload.wasm -c payload.cc --target=wasm32 -fvisibility=hidden"
-	},
-	"devDependencies": {
-		"prettier": "2.3.0"
-	},
-	"prettier": {
-		"useTabs": true,
-		"semi": true,
-		"singleQuote": true,
-		"jsxSingleQuote": false,
-		"trailingComma": "none",
-		"jsxBracketSameLine": false,
-		"arrowParens": "avoid",
-		"requirePragma": false,
-		"insertPragma": false,
-		"endOfLine": "lf"
 	}
 }
